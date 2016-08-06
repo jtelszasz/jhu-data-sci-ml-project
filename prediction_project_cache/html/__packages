@@ -3,3 +3,6 @@ ggplot2
 lattice
 caret
 AppliedPredictiveModeling
+survival
+gbm
+plyr

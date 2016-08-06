@@ -35,7 +35,7 @@ training <- all_training_data[,na_pct < 0.8]
 ```
 
 # Model Training
-The training dataset is further partioned into halves comprising a training a validation set.  As the samples are assumed to be independent and randomly distributed, fields containing timestamps or time window indicators are removed, as is the user name field in order to generalize the model for any athlete.  The training set is reduced to 9,812 samples of 53 variables (52 predictors and the activity quality class).
+The training dataset is further partioned into halves comprising a training a validation set.  As the samples are assumed to be independent and randomly distributed, fields containing timestamps or time window indicators are removed, as is the user name field in order to generalize the model for any athlete.  The training set is reduced to 9,812 samples of 53 variables (52 predictors and the activity quality class).  
 
 ```{r}
 set.seed(123)
@@ -55,17 +55,19 @@ training <- subset(training, select = -c(X,
 dim(training)
 ```
 
+A gradient boosting machine is trained on the training set.  K-folds cross-validation is performed using the default 10 folds.
 
-
-```{r cache=TRUE}
+```{r cache=TRUE, results=FALSE}
 start.time <- Sys.time()
 mod <- train(factor(classe) ~ ., 
              data=training,
              method='gbm',
              trControl=trainControl(method='cv'))
 end.time <- Sys.time()
-end.time - start.time
+```
 
+```{r}
+end.time - start.time
 mod
 ```
 
@@ -77,13 +79,12 @@ Out of sample accuracy is calculated using the validation set of 9,812 samples n
 confusionMatrix(validation$classe, predict(mod, validation))
 ```
 
-The original imported testing dataset is reduced to only the variables used to train the model.  Predictions are then generated using the predict function from the caret package.
+The original imported testing dataset is reduced to only the variables used to train the model.  Predictions for the testing dataset are then generated using the predict function from the caret package.
 
 ```{r}
 testing <- all_testing_data[, colnames(subset(training, select= -classe))]
 predictions <- predict(mod, testing)
 predictions
-
 ```
 
 Correct Answers (20/20):
