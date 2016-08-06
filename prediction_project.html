@@ -138,9 +138,19 @@ dim(all_training_data)</code></pre>
 <pre><code>## [1] 19622   160</code></pre>
 <pre class="r"><code>dim(all_testing_data)</code></pre>
 <pre><code>## [1]  20 160</code></pre>
+<p>User names and a variable for indicating new time windows are included in the dataset.</p>
+<pre class="r"><code>levels(all_training_data$user_name)</code></pre>
+<pre><code>## [1] &quot;adelmo&quot;   &quot;carlitos&quot; &quot;charles&quot;  &quot;eurico&quot;   &quot;jeremy&quot;   &quot;pedro&quot;</code></pre>
+<pre class="r"><code>levels(all_training_data$new_window)</code></pre>
+<pre><code>## [1] &quot;no&quot;  &quot;yes&quot;</code></pre>
 <p>For this model, samples are assumed to be independent and randomly distributed (also indicated by the row numbers and fields in the 20-sample testing set provided) and therfore fields predominatly containing NA or blank values (more than 80%) are excluded in the model.</p>
 <pre class="r"><code>na_pct &lt;- apply(apply(all_training_data,2,is.na),2,sum)/nrow(all_training_data)
-training &lt;- all_training_data[,na_pct &lt; 0.8]</code></pre>
+training &lt;- all_training_data[,na_pct &lt; 0.9]
+table(na_pct&lt;0.9)</code></pre>
+<pre><code>## 
+## FALSE  TRUE 
+##   100    60</code></pre>
+<p>60 fields remain that have less than 90% NA values.</p>
 </div>
 <div id="model-training" class="section level1">
 <h1>Model Training</h1>
@@ -161,7 +171,7 @@ training &lt;- subset(training, select = -c(X,
                    )
 dim(training)</code></pre>
 <pre><code>## [1] 9812   53</code></pre>
-<p>A gradient boosting machine is trained on the training set. K-folds cross-validation is performed using the default 10 folds.</p>
+<p>A boosted tree model is trained on the training set using the caret package (train function with “gbm” method). K-folds cross-validation is performed using the default 10 folds. The most accurate model uses 150 trees with an interaction depth of 3.</p>
 <pre class="r"><code>start.time &lt;- Sys.time()
 mod &lt;- train(factor(classe) ~ ., 
              data=training,
@@ -170,7 +180,7 @@ mod &lt;- train(factor(classe) ~ .,
              verbose=FALSE)
 end.time &lt;- Sys.time()</code></pre>
 <pre class="r"><code>end.time - start.time</code></pre>
-<pre><code>## Time difference of 8.074813 mins</code></pre>
+<pre><code>## Time difference of 7.584812 mins</code></pre>
 <pre class="r"><code>mod</code></pre>
 <pre><code>## Stochastic Gradient Boosting 
 ## 
@@ -203,7 +213,7 @@ end.time &lt;- Sys.time()</code></pre>
 </div>
 <div id="results" class="section level1">
 <h1>Results</h1>
-<p>Out of sample accuracy is calculated using the validation set of 9,812 samples not used for training the model.</p>
+<p>Out of sample accuracy is calculated using the validation set of 9,812 samples not used for training the model and is estimated to be 97.9%. Sensitivity is estimated to be 98.9% and specificity is approximately 99.8%.</p>
 <pre class="r"><code>confusionMatrix(validation$classe, predict(mod, validation))</code></pre>
 <pre><code>## Confusion Matrix and Statistics
 ## 
@@ -242,7 +252,10 @@ predictions &lt;- predict(mod, testing)
 predictions</code></pre>
 <pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E</code></pre>
-<p>Correct Answers (20/20): B A B A A E D B A A B C B A E E A B B B</p>
+</div>
+<div id="references" class="section level1">
+<h1>References</h1>
+<p>Velloso, E.; Bulling, A.; Gellersen, H.; Ugulino, W.; Fuks, H. <a href="http://groupware.les.inf.puc-rio.br/public/papers/2013.Velloso.QAR-WLE.pdf">Qualitative Activity Recognition of Weight Lifting Exercises</a>. Proceedings of 4th International Conference in Cooperation with SIGCHI (Augmented Human ’13) . Stuttgart, Germany: ACM SIGCHI, 2013.</p>
 </div>
 
 
