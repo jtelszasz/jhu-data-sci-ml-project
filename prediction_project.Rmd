@@ -57,12 +57,13 @@ dim(training)
 
 A gradient boosting machine is trained on the training set.  K-folds cross-validation is performed using the default 10 folds.
 
-```{r cache=TRUE, results=FALSE}
+```{r cache=TRUE, results=FALSE, eval=FALSE}
 start.time <- Sys.time()
 mod <- train(factor(classe) ~ ., 
              data=training,
              method='gbm',
-             trControl=trainControl(method='cv'))
+             trControl=trainControl(method='cv'),
+             verbose=FALSE)
 end.time <- Sys.time()
 ```
 
