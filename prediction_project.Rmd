@@ -1,0 +1,90 @@
+---
+title: "Classifying Weight Training Technique"
+author: "Justin Elszasz"
+date: "August 6, 2016"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(cache=TRUE)
+```
+
+# Executive Summary
+
+The purpose of this project is to develop a model that classifies an athlete'e form in performing a unilateral dumbbell bicep curl.  Six participants conducted ten repetitions of the movement in each of five different modes.  Using a stochastic gradient boosting model (gradient boosting machine, or GBM) trained on 9,812 samples of 52 variables, the model can classify the qualitative performance of the bicep curl with approximaely 98% accuracy.
+
+# Exploratory Analysis
+
+Data are obtained from the [Human Activity Recognition](http://groupware.les.inf.puc-rio.br/har) project.  The data contain both NA values and blanks for samples of fields for which only values are recorded once during a window. 
+
+
+```{r}
+library(ggplot2)
+library(caret)
+library(AppliedPredictiveModeling)
+all_training_data <- read.csv("pml-training.csv",na.strings = c("NA","","#DIV/0!"))
+all_testing_data <- read.csv("pml-testing.csv", na.strings = c("NA","","#DIV/0!"))
+dim(all_training_data)
+dim(all_testing_data)
+```
+
+For this model, samples are assumed to be independent and randomly distributed (also indicated by the row numbers and fields in the 20-sample testing set provided) and therfore fields predominatly containing NA or blank values (more than 80%) are excluded in the model.  
+
+```{r}
+na_pct <- apply(apply(all_training_data,2,is.na),2,sum)/nrow(all_training_data)
+training <- all_training_data[,na_pct < 0.8]
+```
+
+# Model Training
+The training dataset is further partioned into halves comprising a training a validation set.  As the samples are assumed to be independent and randomly distributed, fields containing timestamps or time window indicators are removed, as is the user name field in order to generalize the model for any athlete.  The training set is reduced to 9,812 samples of 53 variables (52 predictors and the activity quality class).
+
+```{r}
+set.seed(123)
+
+ind <- createDataPartition(training$classe, p=.5, list=FALSE)
+training <- training[ind,]
+validation <- training[-ind,]
+
+training <- subset(training, select = -c(X,
+                                user_name,
+                                raw_timestamp_part_1,
+                                raw_timestamp_part_2,
+                                cvtd_timestamp,
+                                new_window,
+                                num_window)
+                   )
+dim(training)
+```
+
+
+
+```{r cache=TRUE}
+start.time <- Sys.time()
+mod <- train(factor(classe) ~ ., 
+             data=training,
+             method='gbm',
+             trControl=trainControl(method='cv'))
+end.time <- Sys.time()
+end.time - start.time
+
+mod
+```
+
+# Results
+
+Out of sample accuracy is calculated using the validation set of 9,812 samples not used for training the model.
+
+```{r}
+confusionMatrix(validation$classe, predict(mod, validation))
+```
+
+The original imported testing dataset is reduced to only the variables used to train the model.  Predictions are then generated using the predict function from the caret package.
+
+```{r}
+testing <- all_testing_data[, colnames(subset(training, select= -classe))]
+predictions <- predict(mod, testing)
+predictions
+
+```
+
+Correct Answers (20/20):
+B A B A A E D B A A B C B A E E A B B B
